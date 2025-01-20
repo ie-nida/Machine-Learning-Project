@@ -18,7 +18,6 @@ def dataset():
         "WindSpeed": np.random.uniform(0, 15, 1000),
         "Pressure": np.random.uniform(950, 1050, 1000),
     }
-
     climate = []
     for temperature, humidity, wind, press in zip(
         information["Temperature"], information["Humidity"], information["WindSpeed"], information["Pressure"]
@@ -43,7 +42,6 @@ def dataset():
             climate.append("Cloudy")
         else:
             climate.append("Overcast")
-
     information["Condition"] = climate
     return pd.DataFrame(information)
 
@@ -70,68 +68,9 @@ X_test_scaled = scaler.transform(X_test)
 classifier = RandomForestClassifier(random_state=42)
 classifier.fit(X_train_scaled, y_train)
 
-# Evaluate the model
-y_pred = classifier.predict(X_test_scaled)
-accuracy = accuracy_score(y_test, y_pred)
-print(f"Model Accuracy: {accuracy * 100:.2f}%")
-
-# Detailed image captions
-detailed_captions = {
-    "Sunny": [
-        "A bright and clear day, perfect for outdoor activities.",
-        "The sun is shining brightly, making it feel warm and cheerful.",
-        "It’s a sunny day, ideal for enjoying the outdoors."
-    ],
-    "Cloudy": [
-        "The sky is overcast with clouds, but no rain is expected.",
-        "It’s cloudy today, with no direct sunlight breaking through.",
-        "A gray sky hangs overhead, making the weather feel cool."
-    ],
-    "Rainy": [
-        "It’s raining, so keep an umbrella handy!",
-        "A rainy day, perfect for staying indoors with a warm drink.",
-        "Heavy rain is falling, so expect wet conditions."
-    ],
-    "Snowy": [
-        "Snow is falling, creating a winter wonderland outside.",
-        "Expect snow flurries, so prepare for slippery roads.",
-        "It’s a snowy day, with thick layers of snow on the ground."
-    ],
-    "Stormy": [
-        "A storm is brewing, with strong winds and heavy rain.",
-        "Prepare for stormy weather with gusty winds and rainfall.",
-        "Thunderstorms are expected, so stay safe indoors."
-    ],
-    "Overcast": [
-        "The sky is overcast, with no sunlight peeking through.",
-        "An overcast sky means cooler temperatures are expected.",
-        "Cloud cover is thick, and no sun is visible today."
-    ],
-    "Tropical Rain": [
-        "A tropical rainstorm is in progress, with heavy downpours.",
-        "Expect intense rainfall and high humidity with this tropical storm.",
-        "A tropical rain is cooling down the area, but it’s quite heavy."
-    ],
-    "Dry and Cold": [
-        "The air is dry and cold, with a chill that makes you bundle up.",
-        "Cold and dry conditions make for an unpleasant outdoor experience.",
-        "Expect dry, chilly air that requires warm clothing."
-    ],
-    "Heatwave": [
-        "It’s a scorching heatwave, so stay hydrated and cool.",
-        "Extreme heat is making the day feel sweltering.",
-        "A heatwave is in progress, with temperatures soaring high."
-    ],
-    "Freezing": [
-        "Freezing conditions are here, making it dangerously cold.",
-        "Expect freezing temperatures, perfect for winter sports.",
-        "It’s freezing outside, so bundle up to stay warm."
-    ],
-}
-
-# Modify the weather_image function to include animations
+# Prediction and Weather Image Handling
 def weather_image(condition):
-    image_dir = "weather_images"
+    # Here, you can map conditions to specific images and captions (can be improved)
     images = {
         "Sunny": "sunny.gif",  
         "Cloudy": "cloudy.gif",
@@ -144,19 +83,11 @@ def weather_image(condition):
         "Heatwave": "heatwave.jpg",
         "Freezing": "freezing.jpg",
     }
+    # Return the path of the image
+    image_path = os.path.join("weather_images", images.get(condition, "unknown.gif"))
+    caption = f"The current condition is: {condition}"
+    return image_path, caption
 
-    image_file = images.get(condition, "unknown.gif")
-    image_path = os.path.join(image_dir, image_file)
-
-    if os.path.exists(image_path):
-        return image_path, random.choice(detailed_captions.get(condition, ["Weather conditions are unclear."]))
-    else:
-        fallback_image = os.path.join(image_dir, "unknown.gif")
-        if not os.path.exists(fallback_image):
-            fallback_image = None
-        return fallback_image, "Weather image not available."
-
-# Modify the prediction function to remove background color
 def prediction(temp, humidity, windspeed, pressure):
     input_data = pd.DataFrame([[temp, humidity, windspeed, pressure]], columns=["Temperature", "Humidity", "WindSpeed", "Pressure"])
     input_data_scaled = scaler.transform(input_data)
@@ -166,54 +97,45 @@ def prediction(temp, humidity, windspeed, pressure):
     
     image, caption = weather_image(condition)
     
-    # Add emojis
-    emojis = {
-        "Sunny": "🌞",
-        "Cloudy": "☁️",
-        "Rainy": "🌧️",
-        "Snowy": "❄️",
-        "Stormy": "🌩️",
-        "Overcast": "☁️",
-        "Tropical Rain": "🌴🌧️",
-        "Dry and Cold": "🌵❄️",
-        "Heatwave": "🔥",
-        "Freezing": "❄️🥶",
-    }
-    emoji = emojis.get(condition, "🌈")
+    return f"The predicted weather condition is: {condition}", image, caption
 
-    result = f"""
-    Temperature: {temp} °C
-    Humidity: {humidity} %
-    Wind Speed: {windspeed} m/s
-    Pressure: {pressure} hPa
-    Predicted Condition: {condition} {emoji}
-    """
-    return result.strip(), image, caption
+# Gradio Interface
+def create_gradio_app():
+    with gr.Blocks() as app:
+        with gr.Tab("Main Page"):
+            gr.Markdown(
+                """
+                <h1 style="text-align:center; font-size:3em; color:#2c3e50;">Weather Forecasting Prediction Model</h1>
+                <p style="text-align:center; font-size:1.2em; color:#34495e;">
+                    Accurately predicting weather conditions based on temperature, humidity, wind speed, and pressure.
+                </p>
+                """,
+                elem_id="main-page",
+            )
+        with gr.Tab("Weather Conditions"):
+            inputs = [
+                gr.Number(label="Temperature (°C)"),
+                gr.Number(label="Humidity (%)"),
+                gr.Number(label="Wind Speed (m/s)"),
+                gr.Number(label="Pressure (hPa)"),
+            ]
+            outputs = [
+                gr.Textbox(label="Weather Data"),
+                gr.Image(label="Generated Weather Image"),
+                gr.Textbox(label="Detailed Caption"),
+            ]
 
-# Modify Gradio interface to exclude background color
-def gradio_interface():
-    inputs = [
-        gr.Number(label="Temperature (°C)"),
-        gr.Number(label="Humidity (%)"),
-        gr.Number(label="Wind Speed (m/s)"),
-        gr.Number(label="Pressure (hPa)"),
-    ]
-    outputs = [
-        gr.Textbox(label="Weather Data"),
-        gr.Image(label="Generated Weather Image"),
-        gr.Textbox(label="Detailed Caption"),
-    ]
-
-    interface = gr.Interface(
-        fn=prediction,
-        inputs=inputs,
-        outputs=outputs,
-        title="Weather Forecasting",
-        description="Enter weather metrics to predict conditions, generate an image, and get a detailed caption.",
-    )
-    
-    interface.launch(share=True)
+            gr.Interface(
+                fn=prediction,
+                inputs=inputs,
+                outputs=outputs,
+                title="Weather Forecasting",
+                description="Enter weather metrics to predict conditions, generate an image, and get a detailed caption.",
+            ).launch(share=True)
 
 if __name__ == "__main__":
-    gradio_interface()
+    create_gradio_app()
+
+
+
 
