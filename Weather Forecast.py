@@ -214,19 +214,25 @@ weather_descriptions = """
     - Humidity: Extremely low humidity
 """
 
-with gr.Blocks() as interface:  
-        
+with gr.Blocks() as interface:
+    # Title outside the tab to appear at the top
+    gr.Markdown("""
+        <div style="display: flex; justify-content: center; align-items: center; height: auto; background-color: transparent; margin: 0;">
+            <h1 style="font-size: 40px; color: #ff6347; font-family: 'Arial', sans-serif; text-align: center; padding: 20px 25px; background-color: transparent; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); text-transform: uppercase; letter-spacing: 2px; width: 100%; max-width: 700px; border: 2px solid white;">
+                Weather Forecasting
+            </h1>
+        </div>
+    """)
+
     with gr.Tab("Weather Forecasting"):
         gr.Interface(
             fn=prediction,
             inputs=inputs,
             outputs=outputs,
-            title="Weather Forecasting",
             description="Enter weather metrics to predict conditions, generate an image, and get a detailed caption.",
         )
-        
+
     with gr.Tab("Weather Descriptions"):
         gr.Markdown(weather_descriptions)
-    
 
 interface.launch(share=True)
